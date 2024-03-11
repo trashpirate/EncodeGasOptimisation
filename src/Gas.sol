@@ -65,11 +65,15 @@ contract GasContract is Constants {
     error GasContract__UserNotWhitelisted();
     error GasContract__MaxNameLengthExceeded();
     error GasContract__InsufficientBalance();
+    error GasContract__InsufficientAmount();
+    error GasContract__InvalidTier();
+    error GasContract__InvalidID();
+    error GasContract__InvalidAmount();
+    error GasContract__InvalidAdminAddress();
 
     // refactoring -> saves 196610
     modifier onlyAdminOrOwner() {
-        if (!checkForAdmin(msg.sender) && msg.sender != contractOwner)
-            revert GasContract__CallerNotAdmin(); // using custom error -> 17214
+        isAdminOrOwner();
         // require(
         //     checkForAdmin(msg.sender) || msg.sender == contractOwner,
         //     "Gas Contract: Caller not admin" // shorten error -> saves 5007
@@ -112,18 +116,27 @@ contract GasContract is Constants {
         for (uint256 ii = 0; ii < administrators.length; ii++) {
             // zero address check -< saves 535
             administrators[ii] = _admins[ii];
-            if (_admins[ii] == msg.sender) {
-                balances[msg.sender] = _totalSupply;
-                emit supplyChanged(_admins[ii], _totalSupply);
-            }
+            // if (_admins[ii] == msg.sender) {
+            //     balances[msg.sender] = _totalSupply;
+            //     emit supplyChanged(_admins[ii], _totalSupply);
+            // }
         }
+
+        // removing if statement -> saves 574
+        balances[msg.sender] = _totalSupply;
+        emit supplyChanged(msg.sender, _totalSupply);
+    }
+
+    function isAdminOrOwner() private view {
+        if (!checkForAdmin(msg.sender) && msg.sender != contractOwner)
+            revert GasContract__CallerNotAdmin();
     }
 
     function getPaymentHistory()
         public
         view
         returns (
-            // set to view 28626
+            // set to view -> saves 28626
             History[] memory paymentHistory_
         )
     {
@@ -220,9 +233,12 @@ contract GasContract is Constants {
         uint256 _amount,
         PaymentType _type
     ) public onlyAdminOrOwner {
-        require(_ID > 0, "Gas Contract: Invalid ID");
-        require(_amount > 0, "Gas Contract: Invalid amount");
-        require(_user != address(0), "Gas Contract : Invalid admin address");
+        if (_ID == 0) revert GasContract__InvalidID();
+        if (_amount == 0) revert GasContract__InvalidAmount();
+        if (_user == address(0)) revert GasContract__InvalidAdminAddress();
+        // require(_ID > 0, "Gas Contract: Invalid ID");
+        // require(_amount > 0, "Gas Contract: Invalid amount");
+        // require(_user != address(0), "Gas Contract : Invalid admin address");
 
         // address senderOfTx = msg.sender; saves 400
 
@@ -248,7 +264,8 @@ contract GasContract is Constants {
         address _userAddrs,
         uint256 _tier
     ) public onlyAdminOrOwner {
-        require(_tier < 255, "Gas Contract: Invalid tier");
+        if (_tier >= 255) revert GasContract__InvalidTier();
+        // require(_tier < 255, "Gas Contract: Invalid tier");
         // remove dead code -> saves 45256
         if (_tier > 3) {
             whitelist[_userAddrs] = 3;
@@ -289,7 +306,9 @@ contract GasContract is Constants {
         //     "Gas Contract: Insufficient Balance"
         // );
 
-        require(_amount > 3, "Gas Contract: Insufficient Amount");
+        // custom error -> saves 11418
+        if (_amount <= 3) revert GasContract__InsufficientAmount();
+        // require(_amount > 3, "Gas Contract: Insufficient Amount");
         uint256 whitelistBalance = whitelist[msg.sender]; // saves 1807
         balances[msg.sender] =
             balances[msg.sender] -
