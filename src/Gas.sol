@@ -70,11 +70,15 @@ contract GasContract is Ownable, Constants {
     }
 
     // shorten errors -> saves 68472
+    // remove dead code -> saves 1000
     modifier checkIfWhiteListed(address sender) {
-        address senderOfTx = msg.sender;
-        require(senderOfTx == sender, "Gas Contract: Origin not Sender");
-        uint256 usersTier = whitelist[senderOfTx];
-        require(usersTier > 0, "Gas Contract: User is not whitlisted"); // remove unused code -> 17421
+        // address senderOfTx = msg.sender;
+        // require(senderOfTx == sender, "Gas Contract: Origin not Sender");
+        // uint256 usersTier = whitelist[msg.sender];
+        require(
+            whitelist[msg.sender] > 0,
+            "Gas Contract: User is not whitlisted"
+        ); // remove unused code -> 17421
         _;
     }
 
@@ -130,11 +134,9 @@ contract GasContract is Ownable, Constants {
     // function getTradingMode() public pure returns (bool mode_) {
     //     return true;
     // }
+    // change return value -> saves 20827
 
-    function addHistory(
-        address _updateAddress,
-        bool _tradeMode
-    ) public returns (bool status_, bool tradeMode_) {
+    function addHistory(address _updateAddress) public {
         History memory history;
         history.blockNumber = block.number;
         history.lastUpdate = block.timestamp;
@@ -145,33 +147,34 @@ contract GasContract is Ownable, Constants {
         // for (uint256 i = 0; i < tradePercent; i++) {
         //     status[i] = true;
         // }
-        return ((true), _tradeMode);
+        // return true;
     }
 
     // shorten all error strings below -> saves 114128
 
-    function getPayments(
-        address _user
-    ) public view returns (Payment[] memory payments_) {
-        require(_user != address(0), "Gas Contract: Invalid address");
-        return payments[_user];
-    }
+    // remove code -> saves 175384
+    // function getPayments(
+    //     address _user
+    // ) public view returns (Payment[] memory payments_) {
+    //     require(_user != address(0), "Gas Contract: Invalid address");
+    //     return payments[_user];
+    // }
 
     function transfer(
         address _recipient,
         uint256 _amount,
         string calldata _name
     ) public returns (bool status_) {
-        address senderOfTx = msg.sender;
+        // address senderOfTx = msg.sender; // saves 4407
         require(
-            balances[senderOfTx] >= _amount,
+            balances[msg.sender] >= _amount,
             "Gas Contract: Insufficient Balance"
         );
         require(
             bytes(_name).length < 9,
             "Gas Contract:  Max name length exceeded"
         );
-        balances[senderOfTx] -= _amount;
+        balances[msg.sender] -= _amount;
         balances[_recipient] += _amount;
         emit Transfer(_recipient, _amount);
         Payment memory payment;
@@ -182,12 +185,13 @@ contract GasContract is Ownable, Constants {
         payment.amount = _amount;
         payment.recipientName = _name;
         payment.paymentID = ++paymentCounter;
-        payments[senderOfTx].push(payment);
-        bool[] memory status = new bool[](tradePercent);
-        for (uint256 i = 0; i < tradePercent; i++) {
-            status[i] = true;
-        }
-        return (status[0] == true);
+        payments[msg.sender].push(payment);
+        // remove dead code -> saves 33033
+        // bool[] memory status = new bool[](tradePercent);
+        // for (uint256 i = 0; i < tradePercent; i++) {
+        //     status[i] = true;
+        // }
+        return true;
     }
 
     function updatePayment(
@@ -200,7 +204,7 @@ contract GasContract is Ownable, Constants {
         require(_amount > 0, "Gas Contract: Invalid amount");
         require(_user != address(0), "Gas Contract : Invalid admin address");
 
-        address senderOfTx = msg.sender;
+        // address senderOfTx = msg.sender; saves 400
 
         for (uint256 ii = 0; ii < payments[_user].length; ii++) {
             if (payments[_user][ii].paymentID == _ID) {
@@ -209,9 +213,9 @@ contract GasContract is Ownable, Constants {
                 payments[_user][ii].paymentType = _type;
                 payments[_user][ii].amount = _amount;
                 // bool tradingMode = getTradingMode();
-                addHistory(_user, true);
+                addHistory(_user);
                 emit PaymentUpdated(
-                    senderOfTx,
+                    msg.sender,
                     _ID,
                     _amount,
                     payments[_user][ii].recipientName
@@ -284,11 +288,12 @@ contract GasContract is Ownable, Constants {
         );
     }
 
-    receive() external payable {
-        payable(msg.sender).transfer(msg.value);
-    }
+    // dead code -> saves 19020
+    // receive() external payable {
+    //     payable(msg.sender).transfer(msg.value);
+    // }
 
-    fallback() external payable {
-        payable(msg.sender).transfer(msg.value);
-    }
+    // fallback() external payable {
+    //     payable(msg.sender).transfer(msg.value);
+    // }
 }
