@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.0;
+pragma solidity 0.8.23; // change solidity verison -> saves 26511
 
-import "./Ownable.sol";
+// import "./Ownable.sol"; // saves -> 112222
 
 // set to constant and remove unused variable -> 80055
 // removing inheritance does not change gas
@@ -10,7 +10,7 @@ contract Constants {
     uint256 constant dividendFlag = 1;
 }
 
-contract GasContract is Ownable, Constants {
+contract GasContract is Constants {
     uint256 public immutable totalSupply; // cannot be updated, set to immutable -> saves 16472
     uint256 private paymentCounter; // set to private -> saves 7614, not setting to 0 -> saves 2209
     mapping(address => uint256) public balances;
@@ -28,7 +28,7 @@ contract GasContract is Ownable, Constants {
         Dividend,
         GroupPayment
     }
-    PaymentType constant defaultPayment = PaymentType.Unknown;
+    // PaymentType constant defaultPayment = PaymentType.Unknown;
 
     History[] private paymentHistory; // when a payment was updated, setting to private -> saves 30436
 
@@ -61,12 +61,19 @@ contract GasContract is Ownable, Constants {
 
     event AddedToWhitelist(address userAddress, uint256 tier);
 
+    error GasContract__CallerNotAdmin();
+    error GasContract__UserNotWhitelisted();
+    error GasContract__MaxNameLengthExceeded();
+    error GasContract__InsufficientBalance();
+
     // refactoring -> saves 196610
     modifier onlyAdminOrOwner() {
-        require(
-            checkForAdmin(msg.sender) || msg.sender == contractOwner,
-            "Gas Contract: Caller not admin" // shorten error -> saves 5007
-        );
+        if (!checkForAdmin(msg.sender) && msg.sender != contractOwner)
+            revert GasContract__CallerNotAdmin(); // using custom error -> 17214
+        // require(
+        //     checkForAdmin(msg.sender) || msg.sender == contractOwner,
+        //     "Gas Contract: Caller not admin" // shorten error -> saves 5007
+        // );
         _;
     }
 
@@ -76,10 +83,14 @@ contract GasContract is Ownable, Constants {
         // address senderOfTx = msg.sender;
         // require(senderOfTx == sender, "Gas Contract: Origin not Sender");
         // uint256 usersTier = whitelist[msg.sender];
-        require(
-            whitelist[msg.sender] > 0,
-            "Gas Contract: User is not whitlisted"
-        ); // remove unused code -> 17421
+
+        if (whitelist[msg.sender] == 0)
+            revert GasContract__UserNotWhitelisted(); // saves 11413
+
+        // require(
+        //     whitelist[msg.sender] > 0,
+        //     "Gas Contract: User is not whitlisted"
+        // ); // remove unused code -> 17421
         _;
     }
 
@@ -110,8 +121,11 @@ contract GasContract is Ownable, Constants {
 
     function getPaymentHistory()
         public
-        payable
-        returns (History[] memory paymentHistory_)
+        view
+        returns (
+            // set to view 28626
+            History[] memory paymentHistory_
+        )
     {
         return paymentHistory;
     }
@@ -167,14 +181,19 @@ contract GasContract is Ownable, Constants {
         string calldata _name
     ) public returns (bool status_) {
         // address senderOfTx = msg.sender; // saves 4407
-        require(
-            balances[msg.sender] >= _amount,
-            "Gas Contract: Insufficient Balance"
-        );
-        require(
-            bytes(_name).length < 9,
-            "Gas Contract:  Max name length exceeded"
-        );
+        // custom errors -> saves 13813
+        if (balances[msg.sender] < _amount)
+            revert GasContract__InsufficientBalance();
+        // require(
+        //     balances[msg.sender] >= _amount,
+        //     "Gas Contract: Insufficient Balance"
+        // );
+        if (bytes(_name).length >= 9)
+            revert GasContract__MaxNameLengthExceeded();
+        // require(
+        //     bytes(_name).length < 9,
+        //     "Gas Contract:  Max name length exceeded"
+        // );
         balances[msg.sender] -= _amount;
         balances[_recipient] += _amount;
         emit Transfer(_recipient, _amount);
@@ -262,10 +281,14 @@ contract GasContract is Ownable, Constants {
             msg.sender
         );
 
-        require(
-            balances[msg.sender] >= _amount,
-            "Gas Contract: Insufficient Balance"
-        );
+        // custom error -> saves 11613
+        if (balances[msg.sender] < _amount)
+            revert GasContract__InsufficientBalance();
+        // require(
+        //     balances[msg.sender] >= _amount,
+        //     "Gas Contract: Insufficient Balance"
+        // );
+
         require(_amount > 3, "Gas Contract: Insufficient Amount");
         uint256 whitelistBalance = whitelist[msg.sender]; // saves 1807
         balances[msg.sender] =
