@@ -6,8 +6,8 @@ import "./Ownable.sol";
 // set to constant and remove unused variable -> 80055
 // removing inheritance does not change gas
 contract Constants {
-    uint8 constant tradeFlag = 1;
-    uint8 constant dividendFlag = 1;
+    uint256 constant tradeFlag = 1;
+    uint256 constant dividendFlag = 1;
 }
 
 contract GasContract is Ownable, Constants {
@@ -116,19 +116,19 @@ contract GasContract is Ownable, Constants {
         return paymentHistory;
     }
 
+    // using return value -> saves 1000
     function checkForAdmin(address _user) public view returns (bool admin_) {
-        bool admin = false;
+        admin_ = false;
         for (uint256 ii = 0; ii < administrators.length; ii++) {
             if (administrators[ii] == _user) {
-                admin = true;
+                admin_ = true;
             }
         }
-        return admin;
     }
 
+    // using return variable -> saves 400
     function balanceOf(address _user) public view returns (uint256 balance_) {
-        uint256 balance = balances[_user];
-        return balance;
+        balance_ = balances[_user];
     }
 
     // saves 9806
@@ -192,7 +192,7 @@ contract GasContract is Ownable, Constants {
         // for (uint256 i = 0; i < tradePercent; i++) {
         //     status[i] = true;
         // }
-        return true;
+        status_ = true;
     }
 
     function updatePayment(
