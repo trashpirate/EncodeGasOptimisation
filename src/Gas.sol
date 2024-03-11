@@ -6,15 +6,15 @@ import "./Ownable.sol";
 // set to constant and remove unused variable -> 80055
 // removing inheritance does not change gas
 contract Constants {
-    uint256 constant tradeFlag = 1;
-    uint256 constant dividendFlag = 1;
+    uint8 constant tradeFlag = 1;
+    uint8 constant dividendFlag = 1;
 }
 
 contract GasContract is Ownable, Constants {
     uint256 public immutable totalSupply; // cannot be updated, set to immutable -> saves 16472
     uint256 private paymentCounter; // set to private -> saves 7614, not setting to 0 -> saves 2209
     mapping(address => uint256) public balances;
-    uint256 constant tradePercent = 12; // set to constant -> saves 43328
+
     address private immutable contractOwner; // set to private -> saves 9415, set to immutable -> saves 7660
     // uint256 public tradeMode = 0; // remove dead code -> saves 23031
     mapping(address => Payment[]) private payments; // setting to private -> 75487
@@ -32,20 +32,21 @@ contract GasContract is Ownable, Constants {
 
     History[] private paymentHistory; // when a payment was updated, setting to private -> saves 30436
 
+    // reordering of structs -> saves 3400
     struct Payment {
-        PaymentType paymentType;
-        uint256 paymentID;
         bool adminUpdated;
+        uint256 paymentID;
+        uint256 amount;
         string recipientName; // max 8 characters
         address recipient;
         address admin; // administrators address
-        uint256 amount;
+        PaymentType paymentType;
     }
 
     struct History {
         uint256 lastUpdate;
-        address updatedBy;
         uint256 blockNumber;
+        address updatedBy;
     }
     // uint256 wasLastOdd = 1; // removed unused variable -> saves 22106
     // mapping(address => uint256) private isOddWhitelistUser; // setting to private -> saves 12215, remove -> saves
